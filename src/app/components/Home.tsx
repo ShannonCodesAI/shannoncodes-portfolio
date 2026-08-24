@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Stars } from "@react-three/drei";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -17,12 +19,10 @@ interface TerminalLine {
 const NAV_ITEMS = ["About", "Expertise", "Services", "Work With Me", "Connect"];
 
 const TERMINAL_LINES: TerminalLine[] = [
-  { prompt: "shannon@portfolio", cmd: "whoami" },
-  { comment: "# autonomous agent developer" },
-  { prompt: "shannon@portfolio", cmd: "cat skills.txt" },
-  { comment: "# cybersecurity · reverse engineering · ai" },
-  { prompt: "shannon@portfolio", cmd: "cat philosophy.txt" },
-  { comment: "# secure by design, resilient by automation" },
+  { prompt: "shannon@secure", cmd: "whoami" },
+  { comment: "# Autonomous Agent Developer" },
+  { prompt: "shannon@secure", cmd: "cat /etc/specialization" },
+  { prompt: "shannon@secure", cmd: "./deploy -" },
 ];
 
 const EXPERTISE_CARDS = [
@@ -71,7 +71,7 @@ const CONNECT_LINKS = [
 
 const STATS = [
   { value: 3, suffix: "", label: "Core Domains" },
-  { value: 20, suffix: "+", label: "Languages & Tools" },
+  { value: 12, suffix: "", label: "Languages & Tools" },
   { value: 100, suffix: "%", label: "Secure by Design" },
 ];
 
@@ -96,12 +96,10 @@ function animateCounter(el: HTMLElement, target: number, suffix = "") {
 /* ------------------------------------------------------------------ */
 export default function Home() {
   /* ---- state ---- */
-  const [headerVisible, setHeaderVisible] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState("");
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [terminalVisibleCount, setTerminalVisibleCount] = useState(0);
-  const [heroMounted, setHeroMounted] = useState(false);
   const heroAnimated = useRef(false);
 
   /* ---- refs ---- */
@@ -157,38 +155,21 @@ export default function Home() {
     };
   }, []);
 
-  /* ---- header show/hide on scroll ---- */
-  useEffect(() => {
-    let lastScroll = 0;
-    const onScroll = () => {
-      const y = window.scrollY;
-      setHeaderVisible(y > 300);
-      lastScroll = y;
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  /* ---- hero entrance animation (matches original: inline style + JS) ---- */
+  /* ---- hero entrance animation ---- */
   useEffect(() => {
     if (heroAnimated.current) return;
     heroAnimated.current = true;
     const frame = requestAnimationFrame(() => {
-      setHeroMounted(true);
-      // Also directly animate hero elements via DOM for reliability
-      document.querySelectorAll('[data-hero-anim]').forEach((el, i) => {
-        const htmlEl = el as HTMLElement;
-        const delay = Number(htmlEl.dataset.heroDelay || 0) * 1000;
-        setTimeout(() => {
-          htmlEl.style.opacity = '1';
-          htmlEl.style.transform = 'translateY(0)';
-        }, delay);
-      });
+      const heroWrapper = document.querySelector('[data-hero-wrapper]');
+      if (heroWrapper) {
+        (heroWrapper as HTMLElement).style.opacity = '1';
+        (heroWrapper as HTMLElement).style.transform = 'none';
+      }
     });
     return () => cancelAnimationFrame(frame);
   }, []);
 
-  /* ---- scroll reveal (matches original: inline style + IntersectionObserver) ---- */
+  /* ---- scroll reveal ---- */
   useEffect(() => {
     const t = setTimeout(() => {
       const els = document.querySelectorAll('[data-reveal]');
@@ -196,40 +177,19 @@ export default function Home() {
         (entries) => {
           entries.forEach((e) => {
             if (e.isIntersecting) {
-              const htmlEl = e.target as HTMLElement;
-              htmlEl.style.opacity = '1';
-              htmlEl.style.transform = 'translateY(0) scale(1)';
-              io.unobserve(e.target);
+              const el = e.target as HTMLElement;
+              el.style.opacity = "1";
+              el.style.transform = "translateY(0) scale(1)";
+              io.unobserve(el);
             }
           });
         },
-        { threshold: 0.05, rootMargin: '0px 0px -30px 0px' }
+        { threshold: 0.15 }
       );
       els.forEach((el) => io.observe(el));
-      // Don't disconnect - let it observe
-    }, 150);
+      return () => io.disconnect();
+    }, 100);
     return () => clearTimeout(t);
-  }, []);
-
-  /* ---- stats counter ---- */
-  useEffect(() => {
-    const container = document.getElementById("stats-row");
-    if (!container) return;
-    const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !statsAnimated.current) {
-          statsAnimated.current = true;
-          container.querySelectorAll("[data-count]").forEach((el) => {
-            const target = Number(el.getAttribute("data-count"));
-            const suffix = el.getAttribute("data-suffix") || "";
-            animateCounter(el as HTMLElement, target, suffix);
-          });
-        }
-      },
-      { threshold: 0.3 }
-    );
-    io.observe(container);
-    return () => io.disconnect();
   }, []);
 
   /* ---- terminal typing ---- */
@@ -282,7 +242,6 @@ export default function Home() {
         ctx.fillStyle = `rgba(56, 189, 248, ${p.a})`;
         ctx.fill();
       });
-      // Draw connections
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -307,6 +266,30 @@ export default function Home() {
     };
   }, []);
 
+  /* ---- stats counter ---- */
+  useEffect(() => {
+    if (statsAnimated.current) return;
+    const statsRow = document.getElementById("stats-row");
+    if (!statsRow) return;
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          statsAnimated.current = true;
+          statsRow.querySelectorAll("[data-count]").forEach((el) => {
+            const htmlEl = el as HTMLElement;
+            const target = Number(htmlEl.dataset.count);
+            const suffix = htmlEl.dataset.suffix || "";
+            animateCounter(htmlEl, target, suffix);
+          });
+          io.disconnect();
+        }
+      },
+      { threshold: 0.5 }
+    );
+    io.observe(statsRow);
+    return () => io.disconnect();
+  }, []);
+
   /* ---- tilt card effect ---- */
   const handleTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const card = e.currentTarget;
@@ -318,15 +301,21 @@ export default function Home() {
     const rotateX = ((y - centerY) / centerY) * -8;
     const rotateY = ((x - centerX) / centerX) * 8;
     card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.02,1.02,1.02)`;
-    card.style.setProperty("--mouse-x", `${x}px`);
-    card.style.setProperty("--mouse-y", `${y}px`);
+    card.style.boxShadow = "0 20px 40px -15px rgba(0,0,0,0.5)";
+    const shine = card.querySelector(".card-shine") as HTMLElement;
+    if (shine) {
+      shine.style.setProperty("--mouse-x", x + "px");
+      shine.style.setProperty("--mouse-y", y + "px");
+    }
   }, []);
 
   const resetTilt = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    e.currentTarget.style.transform = "";
+    const card = e.currentTarget;
+    card.style.transform = "perspective(1000px) rotateX(0) rotateY(0) scale3d(1,1,1)";
+    card.style.boxShadow = "none";
   }, []);
 
-  /* ---- navigation scroll ---- */
+  /* ---- nav scroll ---- */
   const scrollTo = (id: string) => {
     const el = document.getElementById(id.toLowerCase().replace(/ /g, "-"));
     if (el) el.scrollIntoView({ behavior: "smooth" });
@@ -348,6 +337,17 @@ export default function Home() {
   /* ================================================================ */
   return (
     <>
+      {/* ---------- Three.js particle background ---------- */}
+      <div className="fixed inset-0 z-0">
+        <Canvas
+          camera={{ position: [0, 0, 1] }}
+          style={{ background: 'transparent' }}
+          dpr={[1, 1.5]}
+        >
+          <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1.5} />
+        </Canvas>
+      </div>
+
       {/* ---------- overlays ---------- */}
       <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none" style={{ zIndex: 1, opacity: 0.5 }} aria-hidden="true" />
       <div className="grid-overlay" aria-hidden="true" />
@@ -363,8 +363,7 @@ export default function Home() {
           background: "rgba(3, 5, 16, 0.6)",
           backdropFilter: "blur(16px)",
           borderColor: "var(--border)",
-          borderBottom: "1px solid var(--border)",
-          transform: headerVisible ? "translateY(0)" : "translateY(-80px)",
+          transform: "none",
         }}
       >
         <button
@@ -385,8 +384,17 @@ export default function Home() {
               className="interactive relative text-sm font-medium transition-colors duration-200"
               style={{ color: "var(--text-dim)", background: "none", border: "none", fontFamily: "var(--font-main)", padding: "4px 0" }}
               onClick={() => scrollTo(item)}
+              onMouseEnter={(e) => {
+                const underline = (e.currentTarget as HTMLElement).querySelector('.nav-underline') as HTMLElement;
+                if (underline) underline.style.width = '100%';
+              }}
+              onMouseLeave={(e) => {
+                const underline = (e.currentTarget as HTMLElement).querySelector('.nav-underline') as HTMLElement;
+                if (underline) underline.style.width = '0';
+              }}
             >
               {item}
+              <span className="nav-underline absolute bottom-[-2px] left-0 h-[2px] transition-all duration-300" style={{ background: "var(--accent)", width: 0 }} />
             </button>
           ))}
         </nav>
@@ -394,12 +402,13 @@ export default function Home() {
         <button
           className="md:hidden flex flex-col gap-[5px] p-2"
           aria-label="Toggle navigation"
+          aria-expanded={mobileMenuOpen ? "true" : "false"}
           style={{ background: "none", border: "none" }}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         >
-          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)" }} />
-          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)" }} />
-          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)" }} />
+          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)", opacity: 1, transform: "none", transition: "all 0.3s" }} />
+          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)", opacity: 1, transform: "none", transition: "all 0.3s" }} />
+          <span className="block w-[26px] h-[2px] rounded-sm" style={{ background: "var(--text)", opacity: 1, transform: "none", transition: "all 0.3s" }} />
         </button>
       </header>
 
@@ -423,39 +432,27 @@ export default function Home() {
         {/* ==================== HERO ==================== */}
         <section className="relative min-h-screen flex items-center" style={{ paddingTop: 100, paddingBottom: 60 }}>
           <div className="section-container w-full">
-            <div className="max-w-3xl">
-              <p
-                data-hero-anim data-hero-delay="0.1"
-                className="mb-5"
-                style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em", opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
-              >
+            <div className="max-w-3xl" data-hero-wrapper style={{ opacity: 0, transform: 'none', transition: 'opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)' }}>
+              <p className="mb-5" style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em", opacity: 1 }}>
                 // secure by design, resilient by automation
               </p>
 
-              <h1
-                data-hero-anim data-hero-delay="0.25"
-                className=""
-                style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em", opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
-              >
+              <h1 style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em" }}>
                 <span className="glitch" data-text="I'm Shannon Madden.">
                   I&apos;m Shannon Madden.
                 </span>
               </h1>
 
-              <p
-                data-hero-anim data-hero-delay="0.4"
-                className=""
-                style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24, opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
-              >
+              <p style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24, opacity: 1 }}>
                 Autonomous Agent Developer · Cybersecurity Engineer · Reverse-Engineering Specialist
               </p>
 
-              <p data-hero-anim data-hero-delay="0.55" style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7, opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
+              <p style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7, opacity: 1 }}>
                 I build <strong style={{ color: "var(--text)" }}>autonomous AI agents</strong> by day, analyze binaries and harden infrastructure by night. From self-sustaining agent loops to deep-level defensive security — I turn ambitious ideas into{" "}
                 <strong style={{ color: "var(--text)" }}>resilient, secure systems</strong>.
               </p>
 
-              <div data-hero-anim data-hero-delay="0.7" className="flex flex-wrap gap-4 mb-10" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
+              <div className="flex flex-wrap gap-4 mb-10" style={{ opacity: 1, transform: "none" }}>
                 <button className="interactive neon-btn neon-btn-primary" onClick={() => scrollTo("Work With Me")}>
                   Start a Project
                 </button>
@@ -465,7 +462,7 @@ export default function Home() {
               </div>
 
               {/* Terminal */}
-              <div data-hero-anim data-hero-delay="0.85" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
+              <div style={{ opacity: 1 }}>
                 <div className="rounded-xl border p-5 mb-8" style={{ background: "rgba(3, 5, 16, 0.7)", borderColor: "var(--border)", fontFamily: "var(--font-mono)", backdropFilter: "blur(10px)" }}>
                   <div className="flex items-center gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
                     <span className="w-3 h-3 rounded-full" style={{ background: "#fb7185" }} />
@@ -489,7 +486,7 @@ export default function Home() {
               </div>
 
               {/* Stats */}
-              <div id="stats-row" data-hero-anim data-hero-delay="1" className="flex flex-wrap gap-12 mt-8" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
+              <div id="stats-row" className="flex flex-wrap gap-12 mt-8" style={{ opacity: 1 }}>
                 {STATS.map((s) => (
                   <div key={s.label} className="flex flex-col gap-1">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.7rem", fontWeight: 700, color: "var(--accent)" }} data-count={s.value} data-suffix={s.suffix}>
