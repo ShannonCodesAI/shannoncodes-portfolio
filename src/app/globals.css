@@ -453,13 +453,13 @@ button, input, textarea {
   50% { transform: translateY(-10px); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html, body, button, input, textarea {
-    cursor: auto;
-  }
+@media (max-width: 768px) {
   .neon-cursor-dot,
   .neon-cursor-ring {
     display: none !important;
+  }
+  html, body, button, input, textarea {
+    cursor: auto;
   }
 }
 
