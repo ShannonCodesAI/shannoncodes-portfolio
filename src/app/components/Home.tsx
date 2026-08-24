@@ -102,6 +102,7 @@ export default function Home() {
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [terminalVisibleCount, setTerminalVisibleCount] = useState(0);
   const [heroMounted, setHeroMounted] = useState(false);
+  const heroAnimated = useRef(false);
 
   /* ---- refs ---- */
   const cursorDot = useRef<HTMLDivElement>(null);
@@ -168,31 +169,45 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  /* ---- hero entrance animation ---- */
+  /* ---- hero entrance animation (matches original: inline style + JS) ---- */
   useEffect(() => {
-    const t = requestAnimationFrame(() => setHeroMounted(true));
-    return () => cancelAnimationFrame(t);
+    if (heroAnimated.current) return;
+    heroAnimated.current = true;
+    const frame = requestAnimationFrame(() => {
+      setHeroMounted(true);
+      // Also directly animate hero elements via DOM for reliability
+      document.querySelectorAll('[data-hero-anim]').forEach((el, i) => {
+        const htmlEl = el as HTMLElement;
+        const delay = Number(htmlEl.dataset.heroDelay || 0) * 1000;
+        setTimeout(() => {
+          htmlEl.style.opacity = '1';
+          htmlEl.style.transform = 'translateY(0)';
+        }, delay);
+      });
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
-  /* ---- scroll reveal (IntersectionObserver) ---- */
+  /* ---- scroll reveal (matches original: inline style + IntersectionObserver) ---- */
   useEffect(() => {
-    // Wait for hero to be visible first, then observe below-fold elements
     const t = setTimeout(() => {
-      const els = document.querySelectorAll("[data-reveal]");
+      const els = document.querySelectorAll('[data-reveal]');
       const io = new IntersectionObserver(
         (entries) => {
           entries.forEach((e) => {
             if (e.isIntersecting) {
-              e.target.classList.add("revealed");
+              const htmlEl = e.target as HTMLElement;
+              htmlEl.style.opacity = '1';
+              htmlEl.style.transform = 'translateY(0) scale(1)';
               io.unobserve(e.target);
             }
           });
         },
-        { threshold: 0.08 }
+        { threshold: 0.05, rootMargin: '0px 0px -30px 0px' }
       );
       els.forEach((el) => io.observe(el));
-      return () => io.disconnect();
-    }, 100);
+      // Don't disconnect - let it observe
+    }, 150);
     return () => clearTimeout(t);
   }, []);
 
@@ -410,15 +425,17 @@ export default function Home() {
           <div className="section-container w-full">
             <div className="max-w-3xl">
               <p
-                className={`mb-5 hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em", transitionDelay: "0.1s" }}
+                data-hero-anim data-hero-delay="0.1"
+                className="mb-5"
+                style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em", opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
               >
                 // secure by design, resilient by automation
               </p>
 
               <h1
-                className={`hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em", transitionDelay: "0.25s" }}
+                data-hero-anim data-hero-delay="0.25"
+                className=""
+                style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em", opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
               >
                 <span className="glitch" data-text="I'm Shannon Madden.">
                   I&apos;m Shannon Madden.
@@ -426,18 +443,19 @@ export default function Home() {
               </h1>
 
               <p
-                className={`hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24, transitionDelay: "0.4s" }}
+                data-hero-anim data-hero-delay="0.4"
+                className=""
+                style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24, opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}
               >
                 Autonomous Agent Developer · Cybersecurity Engineer · Reverse-Engineering Specialist
               </p>
 
-              <p className={`hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7, transitionDelay: "0.55s" }}>
+              <p data-hero-anim data-hero-delay="0.55" style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7, opacity: 0, transform: "translateY(30px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                 I build <strong style={{ color: "var(--text)" }}>autonomous AI agents</strong> by day, analyze binaries and harden infrastructure by night. From self-sustaining agent loops to deep-level defensive security — I turn ambitious ideas into{" "}
                 <strong style={{ color: "var(--text)" }}>resilient, secure systems</strong>.
               </p>
 
-              <div className={`flex flex-wrap gap-4 mb-10 hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "0.7s" }}>
+              <div data-hero-anim data-hero-delay="0.7" className="flex flex-wrap gap-4 mb-10" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                 <button className="interactive neon-btn neon-btn-primary" onClick={() => scrollTo("Work With Me")}>
                   Start a Project
                 </button>
@@ -447,7 +465,7 @@ export default function Home() {
               </div>
 
               {/* Terminal */}
-              <div className={`hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "0.85s" }}>
+              <div data-hero-anim data-hero-delay="0.85" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                 <div className="rounded-xl border p-5 mb-8" style={{ background: "rgba(3, 5, 16, 0.7)", borderColor: "var(--border)", fontFamily: "var(--font-mono)", backdropFilter: "blur(10px)" }}>
                   <div className="flex items-center gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
                     <span className="w-3 h-3 rounded-full" style={{ background: "#fb7185" }} />
@@ -471,7 +489,7 @@ export default function Home() {
               </div>
 
               {/* Stats */}
-              <div id="stats-row" className={`flex flex-wrap gap-12 mt-8 hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "1s" }}>
+              <div id="stats-row" data-hero-anim data-hero-delay="1" className="flex flex-wrap gap-12 mt-8" style={{ opacity: 0, transform: "translateY(20px)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                 {STATS.map((s) => (
                   <div key={s.label} className="flex flex-col gap-1">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.7rem", fontWeight: 700, color: "var(--accent)" }} data-count={s.value} data-suffix={s.suffix}>
@@ -490,7 +508,7 @@ export default function Home() {
         {/* ==================== ABOUT ==================== */}
         <section id="about" className="relative py-28">
           <div className="section-container">
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <h2 className="section-title">
                 <span className="section-index">01</span> About Me
               </h2>
@@ -498,7 +516,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 lg:grid-cols-5 gap-12 items-start mt-10">
               <div className="lg:col-span-3">
-                <div data-reveal>
+                <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                   <p style={{ color: "var(--text-dim)", marginBottom: 20, fontSize: "1.05rem", lineHeight: 1.75 }}>
                     I bridge the gap between{" "}
                     <strong style={{ color: "var(--text)" }}>autonomous AI automation</strong> and{" "}
@@ -508,7 +526,7 @@ export default function Home() {
                     </em>
                   </p>
                 </div>
-                <div data-reveal>
+                <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                   <p style={{ color: "var(--text-dim)", marginBottom: 28, fontSize: "1.05rem", lineHeight: 1.75 }}>
                     I&apos;m always open to code reviews, security discussions, open-source collaboration, or just talking about the future of tech. If you have a task, a threat model, or an ambitious idea — let&apos;s build something incredible together.
                   </p>
@@ -537,7 +555,7 @@ export default function Home() {
 
               {/* Profile card */}
               <div className="lg:col-span-2">
-                <div data-reveal>
+                <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
                   <div className="tilt-card-wrapper">
                     <div className="tilt-card relative rounded-2xl" onMouseMove={handleTilt} onMouseLeave={resetTilt}>
                       <div className="card-shine" />
@@ -582,12 +600,12 @@ export default function Home() {
         {/* ==================== EXPERTISE ==================== */}
         <section id="expertise" className="relative py-28" style={{ background: "linear-gradient(180deg, rgba(8, 13, 28, 0.5), rgba(3, 5, 16, 0.3))" }}>
           <div className="section-container">
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <h2 className="section-title">
                 <span className="section-index">02</span> Expertise
               </h2>
             </div>
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <p className="section-lead">Three domains, one mission: building systems that are smart, secure, and built to last.</p>
             </div>
 
@@ -624,7 +642,7 @@ export default function Home() {
         {/* ==================== SERVICES ==================== */}
         <section id="services" className="relative py-28">
           <div className="section-container">
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <h2 className="section-title">
                 <span className="section-index">03</span> What I Build
               </h2>
@@ -648,18 +666,18 @@ export default function Home() {
         {/* ==================== WORK WITH ME ==================== */}
         <section id="work-with-me" className="relative py-28" style={{ background: "linear-gradient(180deg, rgba(8, 13, 28, 0.5), rgba(3, 5, 16, 0.3))" }}>
           <div className="section-container">
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <h2 className="section-title">
                 <span className="section-index">04</span> Work With Me
               </h2>
             </div>
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <p className="section-lead">
                 Have a task, a project, or a security question? Pick a topic that matches your needs. Your message is composed in your own email client and sent straight to my inbox — nothing is stored on this site.
               </p>
             </div>
 
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <div className="flex flex-wrap gap-3 mb-10">
                 {TOPICS.map((topic) => (
                   <button
@@ -673,7 +691,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <form className="max-w-3xl rounded-2xl p-9" style={{ background: "var(--bg-card)", border: "1px solid var(--border)" }} onSubmit={handleSubmit}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
                   <div>
@@ -735,7 +753,7 @@ export default function Home() {
         {/* ==================== CONNECT ==================== */}
         <section id="connect" className="relative py-28">
           <div className="section-container">
-            <div data-reveal>
+            <div data-reveal style={{ opacity: 0, transform: "translateY(40px) scale(0.97)", transition: "opacity 0.7s cubic-bezier(0.16,1,0.3,1), transform 0.7s cubic-bezier(0.16,1,0.3,1)" }}>
               <h2 className="section-title">
                 <span className="section-index">05</span> Let&apos;s Connect
               </h2>
