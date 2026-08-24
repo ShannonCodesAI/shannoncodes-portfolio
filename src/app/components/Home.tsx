@@ -101,7 +101,6 @@ export default function Home() {
   const [selectedTopic, setSelectedTopic] = useState("");
   const [formData, setFormData] = useState({ name: "", email: "", message: "" });
   const [terminalVisibleCount, setTerminalVisibleCount] = useState(0);
-  const [heroMounted, setHeroMounted] = useState(false);
 
   /* ---- refs ---- */
   const cursorDot = useRef<HTMLDivElement>(null);
@@ -166,13 +165,6 @@ export default function Home() {
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  /* ---- hero entrance animation ---- */
-  useEffect(() => {
-    // Small delay to ensure DOM is painted before triggering hero animation
-    const t = requestAnimationFrame(() => setHeroMounted(true));
-    return () => cancelAnimationFrame(t);
   }, []);
 
   /* ---- scroll reveal (IntersectionObserver) ---- */
@@ -411,15 +403,15 @@ export default function Home() {
           <div className="section-container w-full">
             <div className="max-w-3xl">
               <p
-                className={`mb-5 hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em", transitionDelay: "0.1s" }}
+                className="mb-5"
+                style={{ fontFamily: "var(--font-mono)", color: "var(--text-mono)", fontSize: "0.88rem", letterSpacing: "0.05em" }}
               >
                 // secure by design, resilient by automation
               </p>
 
               <h1
-                className={`hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em", transitionDelay: "0.25s" }}
+                className=""
+                style={{ fontSize: "clamp(2.2rem, 5.2vw, 3.8rem)", fontWeight: 700, lineHeight: 1.1, marginBottom: 12, letterSpacing: "-0.03em" }}
               >
                 <span className="glitch" data-text="I'm Shannon Madden.">
                   I&apos;m Shannon Madden.
@@ -427,18 +419,18 @@ export default function Home() {
               </h1>
 
               <p
-                className={`hero-fade ${heroMounted ? "hero-visible" : ""}`}
-                style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24, transitionDelay: "0.4s" }}
+                className=""
+                style={{ fontFamily: "var(--font-mono)", color: "var(--accent)", fontWeight: 600, fontSize: "clamp(1rem, 2.2vw, 1.35rem)", lineHeight: 1.6, marginBottom: 24 }}
               >
                 Autonomous Agent Developer · Cybersecurity Engineer · Reverse-Engineering Specialist
               </p>
 
-              <p className={`hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7, transitionDelay: "0.55s" }}>
+              <p style={{ color: "var(--text-dim)", fontSize: "1.1rem", maxWidth: 640, marginBottom: 32, lineHeight: 1.7 }}>
                 I build <strong style={{ color: "var(--text)" }}>autonomous AI agents</strong> by day, analyze binaries and harden infrastructure by night. From self-sustaining agent loops to deep-level defensive security — I turn ambitious ideas into{" "}
                 <strong style={{ color: "var(--text)" }}>resilient, secure systems</strong>.
               </p>
 
-              <div className={`flex flex-wrap gap-4 mb-10 hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "0.7s" }}>
+              <div className="flex flex-wrap gap-4 mb-10">
                 <button className="interactive neon-btn neon-btn-primary" onClick={() => scrollTo("Work With Me")}>
                   Start a Project
                 </button>
@@ -448,7 +440,7 @@ export default function Home() {
               </div>
 
               {/* Terminal */}
-              <div className={`hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "0.85s" }}>
+              <div>
                 <div className="rounded-xl border p-5 mb-8" style={{ background: "rgba(3, 5, 16, 0.7)", borderColor: "var(--border)", fontFamily: "var(--font-mono)", backdropFilter: "blur(10px)" }}>
                   <div className="flex items-center gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid var(--border)" }}>
                     <span className="w-3 h-3 rounded-full" style={{ background: "#fb7185" }} />
@@ -472,7 +464,7 @@ export default function Home() {
               </div>
 
               {/* Stats */}
-              <div id="stats-row" className={`flex flex-wrap gap-12 mt-8 hero-fade ${heroMounted ? "hero-visible" : ""}`} style={{ transitionDelay: "1s" }}>
+              <div id="stats-row" className="flex flex-wrap gap-12 mt-8">
                 {STATS.map((s) => (
                   <div key={s.label} className="flex flex-col gap-1">
                     <span style={{ fontFamily: "var(--font-mono)", fontSize: "1.7rem", fontWeight: 700, color: "var(--accent)" }} data-count={s.value} data-suffix={s.suffix}>
